@@ -1,0 +1,129 @@
+//+------------------------------------------------------------------+
+//|                                                     currency.mqh |
+//|                                    Copyright 2021, Dollarkiller. |
+//|                           https://github.com/dollarkillerx/Quant |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2021, Dollarkiller."
+#property link      "https://github.com/dollarkillerx/Quant"
+//+------------------------------------------------------------------+
+//| 获取货币信息相关函数
+//+------------------------------------------------------------------+
+
+// 货币基础信息
+struct currency_info {
+   string symbol; // 当前图表交易品种名称
+   ENUM_TIMEFRAMES period; // 返回当前时间表
+   int digits; // 当前图标 价格小数点
+   double point; //当前交易品种大小点
+};
+
+// 货币价格信息
+struct currency_price {
+   double bid; // 当前卖价格
+   double ask; // 当前买价格
+   double bid_hight; // 最高卖价
+   double bid_low; // 最低卖价
+   double ask_hight; // 最高买价
+   double ask_low; // 最低买价
+   double point ;// 交易品种点值SYMBOL_POINT
+   long spreae;// 点差
+   int stops_level; // 止损最小点数
+   double session_volume; // 当前交易的总交易量
+   string margin_currency; // 预付款货币
+   string profit_currency; // 盈利货币
+   double swap_long; // 买入库存费
+   double swap_short; // 卖出库存费
+   double volume_min; // 最小订单量
+   double volume_max; // 最大订单量
+   double volume_step; //订单递进最小不常
+};
+
+
+
+class Currency {
+   public:
+   Currency();
+   ~Currency();
+
+   static currency_info GetCurrencyInfo();
+   static currency_price GetCurrencyPrice(string symbol = "");
+};
+
+Currency::Currency(void){};
+Currency::~Currency(void){};
+
+
+static currency_info Currency::GetCurrencyInfo(){
+   currency_info ci;
+
+   ci.digits = Digits();
+   ci.period = Period();
+   ci.point = Point();
+   ci.symbol = Symbol();
+
+   return ci;
+};
+
+static currency_price Currency::GetCurrencyPrice(string symbol = "") {
+   currency_price ci;
+
+   if (symbol == "") {
+      symbol = Symbol();
+   }
+
+   ci.ask = SymbolInfoDouble(symbol, SYMBOL_ASK);
+   ci.bid = SymbolInfoDouble(symbol, SYMBOL_BID);
+   ci.ask_hight = SymbolInfoDouble(symbol, SYMBOL_ASKHIGH);
+   ci.ask_low = SymbolInfoDouble(symbol, SYMBOL_ASKLOW);
+   ci.bid_hight = SymbolInfoDouble(symbol, SYMBOL_BIDHIGH);
+   ci.bid_low = SymbolInfoDouble(symbol, SYMBOL_BIDLOW);
+
+   ci.point = SymbolInfoDouble(symbol,SYMBOL_POINT);
+   ci.session_volume = SymbolInfoDouble(symbol, SYMBOL_SESSION_VOLUME);
+
+   ci.spreae = SymbolInfoInteger(symbol,SYMBOL_SPREAD);
+   ci.stops_level = SymbolInfoInteger(symbol,SYMBOL_TRADE_STOPS_LEVEL);
+
+   ci.margin_currency = SymbolInfoString(symbol,SYMBOL_CURRENCY_MARGIN);
+   ci.profit_currency = SymbolInfoString(symbol,SYMBOL_CURRENCY_PROFIT);
+
+
+   ci.swap_long = SymbolInfoDouble(symbol, SYMBOL_SWAP_LONG);
+   ci.swap_short = SymbolInfoDouble(symbol, SYMBOL_SWAP_SHORT);
+   ci.volume_min = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
+   ci.volume_max= SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
+   ci.volume_step= SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
+
+   return ci;
+};
+
+
+// 货币历史数据
+class CurrencyHistory {
+public:
+   double open[]; // 开盘价
+   double close[]; // 收盘价
+   double high[]; // 最高价
+   double low[]; // 最低价
+   long volume[]; // 成交量
+
+   CurrencyHistory(ENUM_TIMEFRAMES tf, int count, string symbol = ""){
+      if (symbol == "") {
+         symbol = Symbol();
+      }
+
+      ArraySetAsSeries(this.open, true);
+      ArraySetAsSeries(this.close, true);
+      ArraySetAsSeries(this.high, true);
+      ArraySetAsSeries(this.low, true);
+      ArraySetAsSeries(this.volume, true);
+
+      CopyOpen(symbol, tf,0,count,this.open);
+      CopyClose(symbol, tf,0,count,this.close);
+      CopyHigh(symbol, tf,0,count,this.high);
+      CopyLow(symbol, tf,0,count,this.low);
+      CopyRealVolume(symbol,tf,0,count,this.volume);
+   };
+
+   ~CurrencyHistory(){};
+};

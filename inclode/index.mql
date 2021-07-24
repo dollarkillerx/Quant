@@ -1,0 +1,62 @@
+//+------------------------------------------------------------------+
+//|                                                        index.mqh |
+//|                                    Copyright 2021, Dollarkiller. |
+//|                           https://github.com/dollarkillerx/Quant |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2021, Dollarkiller."
+#property link      "https://github.com/dollarkillerx/Quant"
+//+------------------------------------------------------------------+
+//| 常用指标函数
+//+------------------------------------------------------------------+
+
+//+------------------------------------------------------------------+
+//|    MA
+//+------------------------------------------------------------------+
+class MA
+  {
+public:
+   double            ma[];
+
+                     MA(
+      string symbol,                  // 货币
+      ENUM_TIMEFRAMES tf,             // 时间周期
+      int period,                     // 平均周期
+      int shift,                      // 平移
+      ENUM_MA_METHOD method,          // 平滑类型
+      ENUM_APPLIED_PRICE applied_price, // 价格
+      int count                       // 要多少根
+   )
+     {
+      ArraySetAsSeries(this.ma,true);
+      int ma_handler;
+      ma_handler = iMA(symbol, tf,period,shift,method,applied_price);
+      CopyBuffer(ma_handler,0,0,count,this.ma);
+     };
+                    ~MA() {};
+  };
+//+------------------------------------------------------------------+
+
+class ADX{
+   public:
+      double            adx0[];
+      double            adx1[];
+      double            adx2[];
+      ADX(
+         string symbol,
+         ENUM_TIMEFRAMES tf,             // 时间周期
+         int preiod, // 平均周期
+         int count  // 获取个数
+      ) {
+         int adx_handler = iADX(symbol,tf,preiod);
+         ArraySetAsSeries(this.adx0,true);
+         ArraySetAsSeries(this.adx1,true);
+         ArraySetAsSeries(this.adx2,true);
+
+         CopyBuffer(adx_handler,0,0,count,this.adx0);
+         CopyBuffer(adx_handler,1,0,count,this.adx1);
+         CopyBuffer(adx_handler,2,0,count,this.adx2);
+
+
+      };
+      ~ADX() {};
+};
