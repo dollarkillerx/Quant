@@ -105,7 +105,6 @@ public:
    double close[]; // 收盘价
    double high[]; // 最高价
    double low[]; // 最低价
-   long volume[]; // 成交量
 
    CurrencyHistory(ENUM_TIMEFRAMES tf, int count, string symbol = ""){
       if (symbol == "") {
@@ -116,13 +115,11 @@ public:
       ArraySetAsSeries(this.close, true);
       ArraySetAsSeries(this.high, true);
       ArraySetAsSeries(this.low, true);
-      ArraySetAsSeries(this.volume, true);
 
       CopyOpen(symbol, tf,0,count,this.open);
       CopyClose(symbol, tf,0,count,this.close);
       CopyHigh(symbol, tf,0,count,this.high);
       CopyLow(symbol, tf,0,count,this.low);
-      CopyRealVolume(symbol,tf,0,count,this.volume);
    };
 
    ~CurrencyHistory(){};
