@@ -1,0 +1,645 @@
+//+------------------------------------------------------------------+
+//|                                                        order.mqh |
+//|                                    Copyright 2021, Dollarkiller. |
+//|                           https://github.com/dollarkillerx/Quant |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2021, Dollarkiller."
+#property link      "https://github.com/dollarkillerx/Quant"
+//+------------------------------------------------------------------+
+//| 订单相关
+//+------------------------------------------------------------------+
+class Order
+  {
+public:
+                     Order() {};
+                    ~Order() {};
+
+   // 做多
+   static ulong       Buy(
+      string symbol,
+      double lots,   // 交易手数
+      int sl_point,  // 止损点数
+      int tp_point,  // 止盈点数
+      string com,    // 注释
+      int magic,     // 魔术手
+      int max_deviation // 最大滑点
+   );
+
+   // 做空
+   static ulong       Sell(
+      string symbol,
+      double lots,   // 交易手数
+      int sl_point,  // 止损点数
+      int tp_point,  // 止盈点数
+      string com,    // 注释
+      int magic,     // 魔术手
+      int max_deviation // 最大滑点
+   );
+
+      // 做多
+   static ulong       BuyOnce(
+      string symbol,
+      double lots,   // 交易手数
+      int sl_point,  // 止损点数
+      int tp_point,  // 止盈点数
+      string com,    // 注释
+      int magic,     // 魔术手
+      int max_deviation // 最大滑点
+   );
+
+   // 做空
+   static ulong       SellOnce(
+      string symbol,
+      double lots,   // 交易手数
+      int sl_point,  // 止损点数
+      int tp_point,  // 止盈点数
+      string com,    // 注释
+      int magic,     // 魔术手
+      int max_deviation // 最大滑点
+   );
+
+   // 挂单 买
+   static ulong PendingOrderBuy(
+      string symbol,
+      double price, // 挂单价格
+      double lots,   // 交易手数
+      int sl_point,  // 止损点数
+      int tp_point,  // 止盈点数
+      string com,    // 注释
+      int magic,     // 魔术手
+      int max_deviation // 最大滑点
+   );
+
+   // 挂单 卖
+   static ulong PendingOrderSell(
+      string symbol,
+      double price, // 挂单价格
+      double lots,   // 交易手数
+      int sl_point,  // 止损点数
+      int tp_point,  // 止盈点数
+      string com,    // 注释
+      int magic,     // 魔术手
+      int max_deviation // 最大滑点
+   );
+
+   // 平仓 市价单
+   static bool       Close(
+      string symbol, // 货币
+      ulong position, // 订单号
+      ENUM_POSITION_TYPE type, // 当前持仓类型
+      double volume, // 平仓手数
+      long deviation=20 // 滑点数
+   );
+
+   // 修改 止损 点 数
+   static bool ModifySL(string symbol, ulong position, double sl);
+   // 修改 止盈 点 数
+   static bool ModifyTP(string symbol, ulong position,double tp);
+   // 修改 止损 止盈 点 数
+   static bool ModifySLTP(string symbol, ulong position,double sl, double tp);
+
+   // 关闭所有买单 市价单
+   static bool       CloseAllBuy(long magic,string symbol = "",long deviation=20);
+   // 关闭所有卖单 市价单
+   static bool       CloseAllSell(long magic,string symbol = "",long deviation=20);
+   // 关闭所有买单 和 卖单  市价单
+   static bool       CloseAll(long magic,string symbol = "",long deviation=20);
+
+   // 删除挂单
+   static bool DelPendingOrder(long order_id, string symbol);
+   // 删除所有挂单
+   static bool DelAllPendingOrder(long magic,string symbol);
+
+   // 获取订单数量
+   static int GetOrderCount(string symbol, ENUM_POSITION_TYPE type, int magic);
+
+   // 格式化 下单点数
+   static double FormatLots(double lots,string symbol = "");
+
+};
+
+
+// 做多
+static ulong Order::Buy(string symbol,double lots,int sl_point,int tp_point,string com,int magic, int max_deviation = 20)
+  {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.action = TRADE_ACTION_DEAL; // 立即执行
+   request.magic = magic;
+   request.symbol = symbol;
+   request.type = ORDER_TYPE_BUY;
+   request.volume = lots;
+   request.deviation = max_deviation;
+   request.price = SymbolInfoDouble(symbol, SYMBOL_ASK);
+   double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
+   if(sl_point != 0)
+     {
+      request.sl = request.price - sl_point * point;
+     }
+   if(tp_point != 0)
+     {
+      request.tp = request.price + tp_point * point;
+     }
+   request.comment = com;
+
+   bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return 0;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Buy error: %d", result.retcode);
+      return 0;
+     }
+
+   return result.order;
+  }
+
+static ulong Order::BuyOnce(string symbol,double lots,int sl_point,int tp_point,string com,int magic, int max_deviation = 20)
+{
+  int total = PositionsTotal();
+  for (int i=total -1;i>=0;i--) {
+   if (PositionGetTicket(i) > 0) {
+      if (PositionGetString(POSITION_SYMBOL) == symbol && PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY && PositionGetInteger(POSITION_MAGIC) == magic && PositionGetString(POSITION_COMMENT) == com) {
+          return PositionGetTicket(i);
+      }
+   }
+  }
+
+  ulong id = Order::Buy(symbol,lots,sl_point,tp_point,com,magic,max_deviation);
+  return id;
+}
+
+static ulong Order::SellOnce(string symbol,double lots,int sl_point,int tp_point,string com,int magic, int max_deviation = 20)
+{
+  int total = PositionsTotal();
+  for (int i=total -1;i>=0;i--) {
+   if (PositionGetTicket(i) > 0) {
+      if (PositionGetString(POSITION_SYMBOL) == symbol && PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY && PositionGetInteger(POSITION_MAGIC) == magic && PositionGetString(POSITION_COMMENT) == com) {
+          return PositionGetTicket(i);
+      }
+   }
+  }
+
+  ulong id = Order::Sell(symbol,lots,sl_point,tp_point,com,magic,max_deviation);
+  return id;
+}
+
+// 做空
+static ulong Order::Sell(string symbol,double lots,int sl_point,int tp_point,string com,int magic, int max_deviation = 20)
+  {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.action = TRADE_ACTION_DEAL; // 立即执行
+   request.magic = magic;
+   request.symbol = symbol;
+   request.type = ORDER_TYPE_SELL;
+   request.volume = lots;
+   request.deviation = max_deviation;
+   request.price = SymbolInfoDouble(symbol, SYMBOL_BID);
+   double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
+   if(sl_point != 0)
+     {
+      request.sl = request.price + sl_point * point;
+     }
+   if(tp_point != 0)
+     {
+      request.tp = request.price - tp_point * point;
+     }
+   request.comment = com;
+
+   bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return 0;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Buy error: %d", result.retcode);
+      return 0;
+     }
+
+   return result.order;
+  }
+
+// 关闭所有买单
+static bool Order::CloseAllBuy(long magic,string symbol = "",long deviation=20)
+  {
+   if(symbol == "")
+     {
+      symbol = Symbol();
+     }
+
+
+// 获取所有订单数量
+   int total = PositionsTotal();
+
+   for(int i=total-1; i>=0; i--)
+     {
+      if(PositionGetTicket(i)>0)
+        {
+         if(PositionGetString(POSITION_SYMBOL) == symbol && PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY && PositionGetInteger(POSITION_MAGIC) == magic)
+           {
+               Order::Close(symbol,PositionGetTicket(i),POSITION_TYPE_BUY,PositionGetDouble(POSITION_VOLUME),deviation);
+           }
+        }
+     }
+
+   return true;
+}
+
+// 关闭所有卖单
+static bool Order::CloseAllSell(long magic,string symbol = "",long deviation=20)
+  {
+   if(symbol == "")
+     {
+      symbol = Symbol();
+     }
+
+
+// 获取所有订单数量
+   int total = PositionsTotal();
+
+   for(int i=total-1; i>=0; i--)
+     {
+      if(PositionGetTicket(i)>0)
+        {
+         if(PositionGetString(POSITION_SYMBOL) == symbol && PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL && PositionGetInteger(POSITION_MAGIC) == magic)
+           {
+               Order::Close(symbol,PositionGetTicket(i),POSITION_TYPE_SELL,PositionGetDouble(POSITION_VOLUME),deviation);
+           }
+        }
+     }
+
+   return true;
+}
+
+// 关闭所有买单 和 卖单
+static bool Order::CloseAll(long magic,string symbol = "",long deviation=20)
+  {
+   if(symbol == "")
+     {
+      symbol = Symbol();
+     }
+
+
+// 获取所有订单数量
+   int total = PositionsTotal();
+
+   for(int i=total-1; i>=0; i--)
+     {
+      if(PositionGetTicket(i)>0)
+        {
+         if(PositionGetString(POSITION_SYMBOL) == symbol && PositionGetInteger(POSITION_MAGIC) == magic )
+           {
+               if (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL) {
+                  Order::Close(symbol,PositionGetTicket(i),POSITION_TYPE_SELL,PositionGetDouble(POSITION_VOLUME),deviation);
+               }else if (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) {
+                  Order::Close(symbol,PositionGetTicket(i),POSITION_TYPE_BUY,PositionGetDouble(POSITION_VOLUME),deviation);
+               }
+           }
+        }
+     }
+
+   return true;
+}
+
+
+// 关闭特定订单
+static bool Order::Close(string symbol,ulong position, ENUM_POSITION_TYPE type, double volume, long deviation=20)
+  {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   switch(type)
+     {
+      case POSITION_TYPE_BUY:
+         request.type = ORDER_TYPE_SELL;
+         break;
+      case POSITION_TYPE_SELL:
+         request.type = ORDER_TYPE_BUY;
+         break;
+     }
+
+   request.symbol = symbol;
+   request.action = TRADE_ACTION_DEAL;
+   request.position = position;
+   request.volume = volume;
+   request.deviation = deviation;
+
+    bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return false;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Close error: %d", result.retcode);
+      return false;
+     }
+
+   return true;
+  }
+
+
+   // 修改 止损 止盈 点 数
+static bool Order::ModifySLTP(string symbol,ulong position, double sl, double tp) {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.symbol = symbol;
+   request.action = TRADE_ACTION_SLTP;
+   request.position = position;
+   request.sl = NormalizeDouble(sl, SymbolInfoInteger(symbol,SYMBOL_DIGITS));
+   request.tp = NormalizeDouble(tp, SymbolInfoInteger(symbol,SYMBOL_DIGITS));
+
+    bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return false;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Close error: %d", result.retcode);
+      return false;
+     }
+
+   return true;
+}
+
+static bool Order::ModifySL(string symbol,ulong position, double sl) {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.symbol = symbol;
+   request.action = TRADE_ACTION_SLTP;
+   request.position = position;
+   if (sl == 0) {
+    request.sl = 0;
+   }else {
+      request.sl = NormalizeDouble(sl, SymbolInfoInteger(symbol,SYMBOL_DIGITS));
+   }
+
+    bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return false;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Close error: %d", result.retcode);
+      return false;
+     }
+
+   return true;
+}
+
+static bool Order::ModifyTP(string symbol,ulong position,  double tp) {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.symbol = symbol;
+   request.action = TRADE_ACTION_SLTP;
+   request.position = position;
+   if (tp == 0) {
+    request.tp = 0;
+   }else {
+      request.tp = NormalizeDouble(tp, SymbolInfoInteger(symbol,SYMBOL_DIGITS));
+   }
+
+   bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return false;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Close error: %d", result.retcode);
+      return false;
+     }
+
+   return true;
+}
+
+// 删除挂单
+static bool Order::DelPendingOrder(long order_id, string symbol) {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+   request.action = TRADE_ACTION_REMOVE;
+   request.order = order_id;
+   request.symbol = symbol;
+
+   bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return false;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Close error: %d", result.retcode);
+      return false;
+     }
+
+   return true;
+}
+
+// 删除所有挂单
+static bool Order::DelAllPendingOrder(long magic,string symbol) {
+   int total = OrdersTotal();
+   for (int i=total-1;i>=0;i--) {
+      if (OrderGetTicket(i)>0) {
+         if (OrderGetString(ORDER_SYMBOL) == symbol && OrderGetInteger(ORDER_MAGIC) == magic) {
+            Order::DelPendingOrder(OrderGetTicket(i),symbol);
+         }
+      }
+   }
+
+   return true;
+}
+
+
+// 挂单 买
+static ulong Order::PendingOrderBuy(string symbol,double price,double lots,int sl_point,int tp_point,string com,int magic,int max_deviation) {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.action = TRADE_ACTION_PENDING; // 立即执行
+   request.magic = magic;
+   request.symbol = symbol;
+
+   double ask_price = SymbolInfoDouble(symbol, SYMBOL_ASK);
+   double bid_price = SymbolInfoDouble(symbol, SYMBOL_BID);
+
+   if (price > ask_price) {
+      request.type = ORDER_TYPE_BUY_STOP;
+   }else {
+      request.type = ORDER_TYPE_BUY_LIMIT;
+   }
+
+   request.volume = lots;
+   request.deviation = max_deviation;
+   request.price = price;
+   double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
+   if(sl_point != 0)
+     {
+      request.sl = request.price - sl_point * point;
+     }
+   if(tp_point != 0)
+     {
+      request.tp = request.price + tp_point * point;
+     }
+   request.comment = com;
+
+   bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return 0;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Buy error: %d", result.retcode);
+      return 0;
+     }
+
+   return result.order;
+}
+
+// 挂单卖
+static ulong Order::PendingOrderSell(string symbol,double price,double lots,int sl_point,int tp_point,string com,int magic,int max_deviation) {
+   MqlTradeRequest request = {};
+   MqlTradeResult result = {};
+
+   request.action = TRADE_ACTION_PENDING; // 立即执行
+   request.magic = magic;
+   request.symbol = symbol;
+
+   double bid_price = SymbolInfoDouble(symbol, SYMBOL_BID);
+
+   if (price < bid_price) {
+      request.type = ORDER_TYPE_SELL_STOP;
+   }else {
+      request.type = ORDER_TYPE_SELL_LIMIT;
+   }
+
+   request.volume = lots;
+   request.deviation = max_deviation;
+   request.price = price;
+   double point = SymbolInfoDouble(symbol, SYMBOL_POINT);
+   if(sl_point != 0)
+     {
+      request.sl = request.price + sl_point * point;
+     }
+   if(tp_point != 0)
+     {
+      request.tp = request.price - tp_point * point;
+     }
+   request.comment = com;
+
+   bool r = OrderSend(request,result);
+   if(!r)
+     {
+      if(GetLastError() == 4752)
+        {
+         Alert("ERR_TRADE_DISABLED 4752 EA交易禁止交易");
+        };
+      PrintFormat("OrderSend error %d",GetLastError());
+      return 0;
+     }
+
+   if(result.retcode != 10009)
+     {
+      printf("Order::Buy error: %d", result.retcode);
+      return 0;
+     }
+
+   return result.order;
+  }
+
+
+// 获取订单数量
+static int Order::GetOrderCount(string symbol, ENUM_POSITION_TYPE type, int magic) {
+   int order_total = 0;
+   int total = PositionsTotal();
+   for (int i=total-1;i>=0;i--) {
+      if (PositionGetTicket(i) > 0) {
+         if (PositionGetString(POSITION_SYMBOL) == symbol && PositionGetInteger(POSITION_MAGIC) == magic) {
+            order_total += 1;
+         }
+      }
+   }
+
+   return order_total;
+}
+
+
+// 格式化下单点数
+static double Order::FormatLots(double lots,string symbol = "") {
+   if (symbol == "") {
+      symbol = Symbol();
+   }
+
+   // 最小下单 数
+   double min_lots = SymbolInfoDouble(symbol,SYMBOL_VOLUME_MIN);
+   // 步长
+   double step_lots = SymbolInfoDouble(symbol,SYMBOL_VOLUME_STEP);
+
+   if (lots < min_lots) {
+      return 0;
+   }
+
+   double multiple = MathFloor(lots/min_lots) * min_lots;
+   double result = multiple + MathFloor((lots - multiple)/step_lots) * step_lots;
+   return result;
+}
+//+------------------------------------------------------------------+
