@@ -1,0 +1,32 @@
+//+------------------------------------------------------------------+
+//|                                                         file.mqh |
+//|                                    Copyright 2021, Dollarkiller. |
+//|                           https://github.com/dollarkillerx/Quant |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2021, Dollarkiller."
+#property link      "https://github.com/dollarkillerx/Quant"
+//+------------------------------------------------------------------+
+//| 文件操作
+//+------------------------------------------------------------------+
+class File {
+public:
+   File(){};
+   ~File(){};
+
+   static int CreateCSV(string file_name);
+};
+
+static int File::CreateCSV(string file_name){
+   int file_handler = FileOpen(file_name, FILE_READ|FILE_WRITE|FILE_CSV);
+
+   if (file_handler == INVALID_HANDLE) {
+      Print("File Error: ", GetLastError());
+      return 0;
+   }
+
+   if (file_handler <= 0) {
+      Print("File Error: ", GetLastError());
+   }
+
+   return file_handler;
+}
