@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/dollarkillerx/Quant/utils"
 )
 
 // macro 宏观 分析 涨跌 区间， 马丁策略风险预警模型
@@ -129,6 +131,9 @@ func main() {
 
 	//fmt.Printf("Ext UP: totol: %d  \n", len(extremumUp))
 	//fmt.Printf("Ext Low: totol: %d \n", len(extremumLow))
+
+	utils.GenChatBarHtml(extremumUp, "EURUSD 1H 上升趋势统计", "EURUSD 1H 上升趋势统计", "eurusd_up_h1.html")
+	utils.GenChatBarHtml(extremumLow, "EURUSD 1H 下降趋势统计", "EURUSD 1H 下降趋势统计", "eurusd_low_h1.html")
 }
 
 type CandlestickChart struct {
