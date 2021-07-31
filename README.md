@@ -6,3 +6,19 @@
 - mql5
 - python
 - golang
+
+### data:
+
+```
+ask,ask_high,ask_low,bid,bid_high,bid_low,time
+
+type CandlestickChart struct {
+	Ask     float64 `json:"ask"`
+	AskHigh float64 `json:"ask_high"`
+	AskLow  float64 `json:"ask_low"`
+	Bid     float64 `json:"bid"`
+	BidHigh float64 `json:"bid_high"`
+	BidLow  float64 `json:"bid_low"`
+	Time    string  `json:"time"`
+}
+```
