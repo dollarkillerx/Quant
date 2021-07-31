@@ -1,14 +1,17 @@
 //+------------------------------------------------------------------+
-//|                                                    base_data.mq5 |
+//|                                                          tp1.mq5 |
 //|                                    Copyright 2021, Dollarkiller. |
 //|                           https://github.com/dollarkillerx/Quant |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2021, Dollarkiller."
 #property link      "https://github.com/dollarkillerx/Quant"
 #property version   "1.00"
+#include <dollarkiller\currency.mqh>
+
 //+------------------------------------------------------------------+
-//| 获取基础数据 使用 GO OR PYTHON做数据分析
+//| Expert initialization function                                   |
 //+------------------------------------------------------------------+
+
 
 int file_handler;
 int OnInit()
@@ -41,10 +44,10 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-      MqlTick last_tick;
-      SymbolInfoTick(Symbol(),last_tick);
 
-      int r = FileWrite(file_handler,last_tick.bid,last_tick.ask);
+      currency_price info = Currency::GetCurrencyPrice();
+      datetime st = SymbolInfoInteger(Symbol(),SYMBOL_TIME);
+      FileWrite(file_handler,info.ask,info.ask_hight,info.ask_low,info.bid,info.bid_hight,info.bid_low,st);
       // Print("bin: ",last_tick.bid, "ask: ",last_tick.ask, "r: ",r," file: ",file_handler);
   }
 //+------------------------------------------------------------------+
