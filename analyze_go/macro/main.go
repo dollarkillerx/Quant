@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -9,8 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/dollarkillerx/Quant/utils"
 )
 
 // macro 宏观 分析 涨跌 区间， 马丁策略风险预警模型
@@ -132,8 +131,25 @@ func main() {
 	//fmt.Printf("Ext UP: totol: %d  \n", len(extremumUp))
 	//fmt.Printf("Ext Low: totol: %d \n", len(extremumLow))
 
-	utils.GenChatBarHtml(extremumUp, "EURUSD 1H 上升趋势统计", "EURUSD 1H 上升趋势统计", "eurusd_up_h1.html")
-	utils.GenChatBarHtml(extremumLow, "EURUSD 1H 下降趋势统计", "EURUSD 1H 下降趋势统计", "eurusd_low_h1.html")
+	//utils.GenChatBarHtml(extremumUp, "EURUSD 1H 上升趋势统计", "EURUSD 1H 上升趋势统计", "eurusd_up_h1.html")
+	//utils.GenChatBarHtml(extremumLow, "EURUSD 1H 下降趋势统计", "EURUSD 1H 下降趋势统计", "eurusd_low_h1.html")
+
+	// GO数据统计的包太少了 没有泛型太TM搞人了
+
+	// 平均数
+	// 中位数
+	// 众数
+	tol := NumTol(0.008, extremumUp)
+	fmt.Printf("extremumUp 平均数: %f 中位数: %f 众数占比: %f  \n", tol.Average, tol.Median, tol.Mode*100)
+	tol = NumTol(0.008, extremumLow)
+	fmt.Printf("extremumLow 平均数: %f 中位数: %f 众数占比: %f  \n", tol.Average, tol.Median, tol.Mode*100)
+
+	marshal, err := json.Marshal(extremumLow)
+	if err != nil {
+		return
+	}
+	fmt.Printf(string(marshal))
+	// 按照80点风险计算 爆仓率 4%
 }
 
 type CandlestickChart struct {
@@ -249,15 +265,61 @@ func (n *Nx) Over() bool {
 	return false
 }
 
-// TurningPoint 获取转折点 30%
+// TurningPointUp 获取转折点 30%
 func TurningPointUp(max, min float64) float64 {
 	return max - (max-min)*0.3
 }
 
+// TurningPointLow 获取转折点 30%
 func TurningPointLow(max, min float64) float64 {
 	return (max-min)*0.3 + min
 }
 
 func GetLast(datas []float64) float64 {
 	return datas[len(datas)-1]
+}
+
+type NumTolSt struct {
+	Average float64
+	Median  float64
+	Mode    float64
+}
+
+func NumTol(r float64, list []float64) NumTolSt {
+	return NumTolSt{
+		Average: Average(list),
+		Median:  Median(list),
+		Mode:    Mode(r, list),
+	}
+}
+
+func Average(list []float64) float64 {
+	var r float64
+	for _, v := range list {
+		r += v
+	}
+
+	return r / float64(len(list))
+}
+
+func Median(list []float64) float64 {
+	var r float64
+	if len(list)%2 == 0 {
+		r = list[len(list)/2]
+	} else {
+		r = (list[len(list)/2] + list[len(list)/2+1]) / 2
+	}
+
+	return r
+}
+
+func Mode(r float64, list []float64) float64 {
+	var t int
+	for _, v := range list {
+		if v <= r {
+			t += 1
+		}
+	}
+
+	return float64(t) / float64(len(list))
 }
