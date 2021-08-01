@@ -1,0 +1,50 @@
+//+------------------------------------------------------------------+
+//|                                                     net_work.mqh |
+//|                                    Copyright 2021, Dollarkiller. |
+//|                           https://github.com/dollarkillerx/Quant |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2021, Dollarkiller."
+#property link      "https://github.com/dollarkillerx/Quant"
+#include <dollarkiller\JAson.mqh>
+//+------------------------------------------------------------------+
+//| Net Work 网络操作
+//+------------------------------------------------------------------+
+
+class Http {
+public:
+   Http(){};
+   ~Http(){};
+
+   char serverResult[];
+   string serverHeaders;
+   bool Post(string url,uchar &jsonData[]) ;
+};
+
+
+/**
+      Http::Post(string url, uchar &jsonData[])
+
+      Http hp;
+
+      CJAVal json;
+
+      json["key"] = "value";
+
+      uchar jsonData[];
+      StringToCharArray(json.Serialize(), jsonData, 0, StringLen(json.Serialize()),CP_UTF8);
+
+      hp.Post("http://127.0.0.1:8085/tick",jsonData);
+      Print(json.Deserialize(hp.serverResult));
+      printf("%s",json["msg"].ToStr());
+*/
+bool Http::Post(string url, uchar &jsonData[]) {
+   char serverResult[]; // 包含服务器反应数据数组
+   string serverHeaders; // 服务器相应标题
+
+   // int res = WebRequest("POST", "http://127.0.0.1:8085/tick","Content-Type:application/json", 1000, jsonData, serverResult, serverHeaders);
+   int res = WebRequest("POST",url,"Content-Type:application/json", 1000, jsonData, this.serverResult, this.serverHeaders);
+   if (res == -1) {
+      Print(GetLastError());
+   }
+   return true;
+}
